@@ -9,9 +9,12 @@ load_dotenv(dotenv_path=Path(__file__).parent / ".env")
 
 class Settings:
     APP_ID: str = (os.getenv("ESTAT_APP_ID") or "").strip()
-    TESSERACT_CMD: str = (os.getenv("TESSERACT_CMD") or "").strip()
-    TESSDATA_PREFIX: str = (os.getenv("TESSDATA_PREFIX") or "").strip()
     ESTAT_BASE_URL: str = "https://api.e-stat.go.jp/rest/3.0/app/json"
+
+    # --- For Gemini Vision API ---
+    GEMINI_API_BASE_URL: str = (os.getenv("GEMINI_API_BASE_URL") or "https://generativelanguage.googleapis.com/v1beta/models").strip()
+    GEMINI_API_KEY: str = (os.getenv("GEMINI_API_KEY") or "").strip()
+    GEMINI_MODEL: str = (os.getenv("GEMINI_MODEL") or "gemini-flash-latest").strip()
 
 settings = Settings()
 
