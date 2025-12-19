@@ -21,65 +21,64 @@ def _ipv4_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
 socket.getaddrinfo = _ipv4_getaddrinfo
 # -------------------------------------------------------
 
-class VisionService:
-    @staticmethod
-    def get_model_name() -> list[str]:
-        """現在設定されているGeminiモデル名を返します。"""
-        if settings.GEMINI_MODEL:
-            return [settings.GEMINI_MODEL]
-        return []
+# =================================================================
+# Gemini Vision API 連携関数（旧 VisionService クラスを関数化）
+# =================================================================
 
-    @staticmethod
-    def extract_text_from_image(file_bytes: bytes) -> str:
-        """画像バイトを受け取り、Google Generative AI SDK (Gemini) を使用してテキストを抽出します。"""
+def get_model_name() -> list[str]:
+    """現在設定されているGeminiモデル名を返します。"""
+    if settings.GEMINI_MODEL:
+        return [settings.GEMINI_MODEL]
+    return []
 
-        # APIキーの設定確認
-        if not settings.GEMINI_API_KEY:
-            # セキュリティのため、キーの中身はログに出さない
-            raise HTTPException(
-                status_code=500,
-                detail="Gemini APIキーが設定されていません。.envファイルを確認してください。",
-            )
+def extract_text_from_image(file_bytes: bytes) -> str:
+    """画像バイトを受け取り、Google Generative AI SDK (Gemini) を使用してテキストを抽出します。"""
 
+    # APIキーの設定確認
+    if not settings.GEMINI_API_KEY:
+        # セキュリティのため、キーの中身はログに出さない
+        raise HTTPException(
+            status_code=500,
+            detail="Gemini APIキーが設定されていません。.envファイルを確認してください。",
+        )
+
+    try:
+        # SDKの設定
+        genai.configure(api_key=settings.GEMINI_API_KEY)
+        
+        # 画像データの準備
         try:
-            # SDKの設定
-            genai.configure(api_key=settings.GEMINI_API_KEY)
-            
-            # 画像データの準備
-            try:
-                img = Image.open(io.BytesIO(file_bytes))
-            except Exception:
-                raise HTTPException(status_code=400, detail="無効な画像ファイルです。")
+            img = Image.open(io.BytesIO(file_bytes))
+        except Exception:
+            raise HTTPException(status_code=400, detail="無効な画像ファイルです。")
 
-            # モデルの初期化
-            model = genai.GenerativeModel(settings.GEMINI_MODEL)
+        # モデルの初期化
+        model = genai.GenerativeModel(settings.GEMINI_MODEL)
 
-            # プロンプトの作成
-            prompt = "これはレシートの画像です。書かれている日本語のテキストを、改行を維持したまま全て正確に抽出してください。"
+        # プロンプトの作成
+        prompt = "これはレシートの画像です。書かれている日本語のテキストを、改行を維持したまま全て正確に抽出してください。"
 
-            # 生成リクエスト
-            # SDKは画像オブジェクト(PIL)を直接扱えます
-            response = model.generate_content([prompt, img])
-            
-            # レスポンスの検証とテキスト抽出
-            if not response.text:
-                 raise HTTPException(status_code=500, detail="Gemini APIからテキストが返されませんでした。")
+        # 生成リクエスト
+        # SDKは画像オブジェクト(PIL)を直接扱えます
+        response = model.generate_content([prompt, img])
+        
+        # レスポンスの検証とテキスト抽出
+        if not response.text:
+             raise HTTPException(status_code=500, detail="Gemini APIからテキストが返されませんでした。")
 
-            return response.text.strip()
+        return response.text.strip()
 
-        except google_exceptions.GoogleAPICallError as e:
-            # Google API固有のエラーハンドリング
-            # エラー詳細にAPIキーが含まれないように注意しつつ、有用な情報を返す
-            error_msg = f"Gemini API呼び出しエラー: {e.message if hasattr(e, 'message') else str(e)}"
-            logging.error(error_msg) # サーバーログには詳細を出す
-            raise HTTPException(status_code=503, detail="Gemini APIサービスでエラーが発生しました。しばらく待って再試行してください。")
-            
-        except ConnectionError as e:
-             logging.error(f"Network Connection Error: {e}")
-             raise HTTPException(status_code=503, detail="Gemini APIへのネットワーク接続に失敗しました。")
-             
-        except Exception as e:
-            # 予期せぬエラー
-            # ここでも詳細なエラー内容はユーザーに返さず、ログに残す
-            logging.error(f"Unexpected error in VisionService: {e}")
-            raise HTTPException(status_code=500, detail="画像解析中に予期せぬエラーが発生しました。")
+    except google_exceptions.GoogleAPICallError as e:
+        # Google API固有のエラーハンドリング
+        error_msg = f"Gemini API呼び出しエラー: {e.message if hasattr(e, 'message') else str(e)}"
+        logging.error(error_msg)
+        raise HTTPException(status_code=503, detail="Gemini APIサービスでエラーが発生しました。しばらく待って再試行してください。")
+        
+    except ConnectionError as e:
+         logging.error(f"Network Connection Error: {e}")
+         raise HTTPException(status_code=503, detail="Gemini APIへのネットワーク接続に失敗しました。")
+         
+    except Exception as e:
+        # 予期せぬエラー
+        logging.error(f"Unexpected error in image extraction: {e}")
+        raise HTTPException(status_code=500, detail="画像解析中に予期せぬエラーが発生しました。")
