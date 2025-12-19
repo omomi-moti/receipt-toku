@@ -104,7 +104,11 @@ class EStatClient:
     def _table_has_any_item(self, class_maps: dict[str, dict[str, str]], keywords: list[str]) -> bool:
         from services import TextUtils
         
-        # 指摘への対応: 直接のリスト指定をやめ、config.pyの定数を使用
+        # e-Statの分類ID（背番号）の意味：
+        # - cat01: 品目名 (例: 卵、牛乳)
+        # - cat02: 規格の詳細 (例: 10個入り、1L)
+        # - cat03: その他の分類
+        # - tab  : 統計の種類 (例: 小売価格)
         for obj_id in CLASS_SEARCH_ORDER:
             mp = class_maps.get(obj_id, {})
             for name in mp.keys():
