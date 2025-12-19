@@ -2,10 +2,10 @@ import re
 import unicodedata
 from functools import lru_cache
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple, Set
+from typing import Any, Optional
 
-from ..config import ITEM_RULES, UNKNOWN_RESCUE_NORMALIZE_MAP, UNKNOWN_RESCUE_CANDIDATE_RULES, CLASS_SEARCH_ORDER, EXCLUDE_WORDS, ESTAT_NAME_HINTS
-from ..schemas import CanonicalResolution
+from config import ITEM_RULES, UNKNOWN_RESCUE_NORMALIZE_MAP, UNKNOWN_RESCUE_CANDIDATE_RULES, CLASS_SEARCH_ORDER, EXCLUDE_WORDS, ESTAT_NAME_HINTS
+from schemas import CanonicalResolution
 
 class TextUtils:
     @staticmethod
@@ -16,7 +16,7 @@ class TextUtils:
             "５": "5", "６": "6", "７": "7", "８": "8", "９": "9",
             "／": "/", "－": "-", "ー": "-", "：": ":", "　": " ",
             "￥": "¥",
-            "\": "¥",
+            "\\": "¥",
         })
         s = s.translate(trans)
         s = re.sub(r"\s+", " ", s).strip()
@@ -37,8 +37,8 @@ class TextUtils:
 class ReceiptParser:
     @staticmethod
     @lru_cache(maxsize=1)
-    def _compiled_item_rules() -> List[Tuple[str, List[str], List[re.Pattern[str]]]]:
-        compiled: List[Tuple[str, List[str], List[re.Pattern[str]]]] = []
+    def _compiled_item_rules() -> list[tuple[str, list[str], list[re.Pattern[str]]]]:
+        compiled: list[tuple[str, list[str], list[re.Pattern[str]]]] = []
         for rule in ITEM_RULES:
             canonical = str(rule.get("canonical") or "")
             keywords = [TextUtils.fold_key(str(k)) for k in (rule.get("keywords") or []) if k]
@@ -83,7 +83,7 @@ class ReceiptParser:
         return any(w in name for w in EXCLUDE_WORDS)
 
     @staticmethod
-    def parse_receipt_text(text: str) -> Tuple[str, List[Tuple[str, Optional[float]]]]:
+    def parse_receipt_text(text: str) -> tuple[str, list[tuple[str, Optional[float]]]]:
         text_for_date = TextUtils.normalize_text(text)
         m = re.search(r"(20\d{2})[/-](\d{1,2})[/-](\d{1,2})", text_for_date)
         if m:
@@ -92,7 +92,7 @@ class ReceiptParser:
         else:
             purchase_date = datetime.now().strftime("%Y-%m-%d")
 
-        items: List[Tuple[str, Optional[float]]] = []
+        items: list[tuple[str, Optional[float]]] = []
         for raw_line in text.splitlines():
             line = TextUtils.normalize_text(raw_line)
             if not line:
@@ -124,11 +124,11 @@ class ReceiptParser:
         return purchase_date, items
 
     @staticmethod
-    def _candidate_terms_for_unknown(raw_name: str) -> List[str]:
+    def _candidate_terms_for_unknown(raw_name: str) -> list[str]:
         raw_norm = TextUtils.normalize_text(raw_name)
         raw_fold = TextUtils.fold_key(raw_norm)
 
-        out: List[str] = []
+        out: list[str] = []
 
         for k, v in UNKNOWN_RESCUE_NORMALIZE_MAP.items():
             if k and TextUtils.fold_key(k) in raw_fold:
@@ -156,8 +156,8 @@ class ReceiptParser:
         if stripped and stripped != raw_norm:
             out.append(stripped)
 
-        uniq: List[str] = []
-        seen: Set[str] = set()
+        uniq: list[str] = []
+        seen: set[str] = set()
         for x in out:
             if not x:
                 continue
@@ -169,12 +169,12 @@ class ReceiptParser:
         return uniq
 
     @staticmethod
-    def _iter_class_name_hits(class_maps: Dict[str, Dict[str, str]], q: str, limit: int = 80) -> List[Dict[str, str]]:
+    def _iter_class_name_hits(class_maps: dict[str, dict[str, str]], q: str, limit: int = 80) -> list[dict[str, str]]:
         qq = TextUtils.simplify_key(q)
         if not qq:
             return []
 
-        hits: List[Dict[str, str]] = []
+        hits: list[dict[str, str]] = []
         for obj_id in CLASS_SEARCH_ORDER:
             mp = class_maps.get(obj_id) or {}
             for name, code in mp.items():
@@ -185,11 +185,11 @@ class ReceiptParser:
         return hits
 
     @staticmethod
-    def _pick_best_hit(hits: List[Dict[str, str]]) -> Optional[Dict[str, str]]:
+    def _pick_best_hit(hits: list[dict[str, str]]) -> Optional[dict[str, str]]:
         if not hits:
             return None
 
-        def score(h: Dict[str, str]) -> Tuple[int, int, int, int, str]:
+        def score(h: dict[str, str]) -> tuple[int, int, int, int, str]:
             name = h.get("name") or ""
             class_id = h.get("class_id") or ""
             simple_len = len(TextUtils.simplify_key(name)) or 10**9
@@ -200,15 +200,15 @@ class ReceiptParser:
         return sorted(hits, key=score)[0]
 
     @staticmethod
-    def resolve_canonical(raw_name: str, class_maps: Dict[str, Dict[str, str]]) -> CanonicalResolution:
+    def resolve_canonical(raw_name: str, class_maps: dict[str, dict[str, str]]) -> CanonicalResolution:
         canonical = ReceiptParser.guess_canonical(raw_name)
         if canonical:
             return CanonicalResolution(canonical=canonical)
 
         candidates = ReceiptParser._candidate_terms_for_unknown(raw_name)
-        tried: List[Dict[str, Any]] = []
+        tried: list[dict[str, Any]] = []
 
-        all_hits: List[Dict[str, str]] = []
+        all_hits: list[dict[str, str]] = []
         for term in candidates:
             hits = ReceiptParser._iter_class_name_hits(class_maps, term, limit=80)
             all_hits.extend(hits)
@@ -234,7 +234,7 @@ class ReceiptParser:
         )
     
     @staticmethod
-    def classify_to_code(class_maps: Dict[str, Dict[str, str]], canonical: str) -> Optional[Tuple[str, str]]:
+    def classify_to_code(class_maps: dict[str, dict[str, str]], canonical: str) -> Optional[tuple[str, str]]:
         hints = ESTAT_NAME_HINTS.get(canonical, [canonical])
         canon_s = TextUtils.simplify_key(canonical)
 
@@ -262,10 +262,10 @@ class ReceiptParser:
         return None
     
     @staticmethod
-    def suggest_meta_candidates(class_maps: Dict[str, Dict[str, str]], canonical: str, limit: int = 10) -> List[Dict[str, str]]:
+    def suggest_meta_candidates(class_maps: dict[str, dict[str, str]], canonical: str, limit: int = 10) -> list[dict[str, str]]:
         hints = ESTAT_NAME_HINTS.get(canonical, [canonical])
         keys = [TextUtils.simplify_key(h) for h in hints if h]
-        hits: List[Dict[str, str]] = []
+        hits: list[dict[str, str]] = []
 
         for obj_id in ["cat01", "tab", "cat02", "cat03"]:
             mp = class_maps.get(obj_id) or {}
@@ -278,7 +278,7 @@ class ReceiptParser:
         return hits
     
     @staticmethod
-    def resolve_time_code(class_maps: Dict[str, Dict[str, str]], yyyymm: str) -> Tuple[str, Optional[str]]:
+    def resolve_time_code(class_maps: dict[str, dict[str, str]], yyyymm: str) -> tuple[str, Optional[str]]:
         time_map = class_maps.get("time") or {}
         if not time_map:
             return ("time", None)
@@ -303,7 +303,7 @@ class ReceiptParser:
         return ("time", None)
 
     @staticmethod
-    def resolve_area_code(class_maps: Dict[str, Dict[str, str]], requested: str) -> Tuple[str, Optional[str]]:
+    def resolve_area_code(class_maps: dict[str, dict[str, str]], requested: str) -> tuple[str, Optional[str]]:
         area_map = class_maps.get("area") or {}
         if not area_map:
             return ("area", None)
