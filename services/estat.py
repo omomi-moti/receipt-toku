@@ -4,6 +4,20 @@ from typing import Any, Optional
 import httpx
 from fastapi import HTTPException
 from config import settings, CLASS_SEARCH_ORDER, ESTAT_NAME_HINTS
+from services.parser import ReceiptParser 
+
+# =================================================================
+# 統計表の重要度を判定するためのキーワードと重み付けの定義
+# タイトルにこれらの言葉が含まれているほど、探し求めているデータである可能性が高いと判断します
+# =================================================================
+ESTAT_TABLE_SCORE_WEIGHTS = [
+    ("全国統一", 5), 
+    ("月別", 3), 
+    ("全国", 2), 
+    ("価格", 1), 
+    ("小売", 2), 
+    ("物価", 2)
+]
 
 class EStatClient:
     def __init__(self):
@@ -14,7 +28,7 @@ class EStatClient:
 
     async def _get(self, path: str, params: dict[str, Any]) -> dict[str, Any]:
         if not settings.APP_ID:
-            raise HTTPException(status_code=500, detail="ESTAT_APP_ID が設定されていません。")
+            raise HTTPException(status_code=502, detail="ESTAT_APP_ID が設定されていません。")
 
         url = f"{settings.ESTAT_BASE_URL}/{path}"
         params = {"appId": settings.APP_ID, **params}
@@ -140,7 +154,8 @@ class EStatClient:
         def score(t: dict[str, Any]) -> int:
             title = str(t.get("TITLE", ""))
             s = 0
-            for kw, w in [("全国統一", 5), ("月別", 3), ("全国", 2), ("価格", 1), ("小売", 2), ("物価", 2)]:
+            # 指摘への対応: 外部で定義した定数を使用
+            for kw, w in ESTAT_TABLE_SCORE_WEIGHTS:
                 if kw in title:
                     s += w
             return s
