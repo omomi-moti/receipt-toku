@@ -126,7 +126,7 @@ class EStatClient:
             raise HTTPException(status_code=502, detail=str(e))
 
     def _table_has_any_item(self, class_maps: dict[str, dict[str, str]], keywords: list[str]) -> bool:
-        from services import TextUtils
+        from services import simplify_key
         
         # e-Statの分類ID（背番号）の意味：
         # - cat01: 品目名 (例: 卵、牛乳)
@@ -136,9 +136,9 @@ class EStatClient:
         for obj_id in CLASS_SEARCH_ORDER:
             mp = class_maps.get(obj_id, {})
             for name in mp.keys():
-                nn = TextUtils.simplify_key(name)
+                nn = simplify_key(name)
                 for kw in keywords:
-                    if TextUtils.simplify_key(kw) in nn:
+                    if simplify_key(kw) in nn:
                         return True
         return False
 

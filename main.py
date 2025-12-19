@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from config import settings
 from schemas import AnalyzeResponse, ItemResult, EstatResult
-from services import EStatClient, VisionService, ReceiptParser, TextUtils, judge
+from services import EStatClient, VisionService, ReceiptParser, normalize_text, simplify_key, fold_key, judge
 
 app = FastAPI(title="Receipt Deal Checker (e-Stat)", version="mvp-stable-5a-gemini")
 
@@ -62,7 +62,7 @@ async def analyze_receipt(
 
     candidate_lines: list[str] = []
     for line in text.splitlines():
-        s = TextUtils.normalize_text(line)
+        s = normalize_text(line)
         if s and re.search(r"\d{2,6}", s):
             candidate_lines.append(s)
 
@@ -71,7 +71,7 @@ async def analyze_receipt(
 
     if debug_ocr:
         debug_extra = {
-            "ocr_text_head": TextUtils.normalize_text(text)[:1200],
+            "ocr_text_head": normalize_text(text)[:1200],
             "ocr_lines_with_digits": candidate_lines[:60],
             "parsed_items": parsed_items[:30],
         }
