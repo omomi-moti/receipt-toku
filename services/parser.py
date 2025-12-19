@@ -2,37 +2,40 @@ import re
 import unicodedata
 from functools import lru_cache
 from datetime import datetime
-from typing import Any, Optional
-
+from typing import Any
 from config import ITEM_RULES, UNKNOWN_RESCUE_NORMALIZE_MAP, UNKNOWN_RESCUE_CANDIDATE_RULES, CLASS_SEARCH_ORDER, EXCLUDE_WORDS, ESTAT_NAME_HINTS
 from schemas import CanonicalResolution
 
-class TextUtils:
-    @staticmethod
-    def normalize_text(s: str) -> str:
-        s = unicodedata.normalize("NFKC", s)
-        trans = str.maketrans({
-            "０": "0", "１": "1", "２": "2", "３": "3", "４": "4",
-            "５": "5", "６": "6", "７": "7", "８": "8", "９": "9",
-            "／": "/", "－": "-", "ー": "-", "：": ":", "　": " ",
-            "￥": "¥",
-            "\\": "¥",
-        })
-        s = s.translate(trans)
-        s = re.sub(r"\s+", " ", s).strip()
-        return s
+# =================================================================
+# テキスト処理用関数（旧 TextUtils クラスを関数化）
+# =================================================================
 
-    @staticmethod
-    def simplify_key(s: str) -> str:
-        s = TextUtils.normalize_text(s)
-        s = re.sub(r"[ \t\r\n]", "", s)
-        s = re.sub(r"[()（）【】\[\]「」『』]", "", s)
-        s = re.sub(r"[・,，\.。/／\-－]", "", s)
-        return s
+def normalize_text(s: str) -> str:
+    """文字の揺れ（全角・半角など）を吸収し、標準的な形に整えます。"""
+    s = unicodedata.normalize("NFKC", s)
+    trans = str.maketrans({
+        "０": "0", "１": "1", "２": "2", "３": "3", "４": "4",
+        "５": "5", "６": "6", "７": "7", "８": "8", "９": "9",
+        "／": "/", "－": "-", "ー": "-", "：": ":", "　": " ",
+        "￥": "¥",
+        "\\": "¥",
+    })
+    s = s.translate(trans)
+    s = re.sub(r"\s+", " ", s).strip()
+    return s
 
-    @staticmethod
-    def fold_key(s: str) -> str:
-        return TextUtils.simplify_key(s).casefold()
+def simplify_key(s: str) -> str:
+    """検索や比較のために、記号や空白を徹底的に取り除いた文字列を返します。"""
+    s = normalize_text(s)
+    s = re.sub(r"[ \t\r\n]", "", s)
+    s = re.sub(r"[()（）【】\[\]「」『』]", "", s)
+    s = re.sub(r"[・,，\.。/／\-－]", "", s)
+    return s
+
+def fold_key(s: str) -> str:
+    """大文字小文字を区別せず比較するための正規化を行います。"""
+    return simplify_key(s).casefold()
+
 
 class ReceiptParser:
     @staticmethod
@@ -41,17 +44,17 @@ class ReceiptParser:
         compiled: list[tuple[str, list[str], list[re.Pattern[str]]]] = []
         for rule in ITEM_RULES:
             canonical = str(rule.get("canonical") or "")
-            keywords = [TextUtils.fold_key(str(k)) for k in (rule.get("keywords") or []) if k]
+            keywords = [fold_key(str(k)) for k in (rule.get("keywords") or []) if k]
             patterns = [re.compile(str(p), flags=re.IGNORECASE) for p in (rule.get("patterns") or []) if p]
             compiled.append((canonical, keywords, patterns))
         return compiled
 
     @staticmethod
-    def guess_canonical(raw: str) -> Optional[str]:
-        s_norm = TextUtils.normalize_text(raw)
-        s_fold = TextUtils.fold_key(s_norm)
+    def guess_canonical(raw: str) -> str | None:
+        s_norm = normalize_text(raw)
+        s_fold = fold_key(s_norm)
 
-        best: Optional[str] = None
+        best: str | None = None
         best_score = -1
 
         for canonical, keywords, patterns in ReceiptParser._compiled_item_rules():
@@ -83,8 +86,8 @@ class ReceiptParser:
         return any(w in name for w in EXCLUDE_WORDS)
 
     @staticmethod
-    def parse_receipt_text(text: str) -> tuple[str, list[tuple[str, Optional[float]]]]:
-        text_for_date = TextUtils.normalize_text(text)
+    def parse_receipt_text(text: str) -> tuple[str, list[tuple[str, float | None]]]:
+        text_for_date = normalize_text(text)
         m = re.search(r"(20\d{2})[/-](\d{1,2})[/-](\d{1,2})", text_for_date)
         if m:
             y, mo, d = int(m.group(1)), int(m.group(2)), int(m.group(3))
@@ -92,9 +95,9 @@ class ReceiptParser:
         else:
             purchase_date = datetime.now().strftime("%Y-%m-%d")
 
-        items: list[tuple[str, Optional[float]]] = []
+        items: list[tuple[str, float | None]] = []
         for raw_line in text.splitlines():
-            line = TextUtils.normalize_text(raw_line)
+            line = normalize_text(raw_line)
             if not line:
                 continue
 
@@ -125,13 +128,13 @@ class ReceiptParser:
 
     @staticmethod
     def _candidate_terms_for_unknown(raw_name: str) -> list[str]:
-        raw_norm = TextUtils.normalize_text(raw_name)
-        raw_fold = TextUtils.fold_key(raw_norm)
+        raw_norm = normalize_text(raw_name)
+        raw_fold = fold_key(raw_norm)
 
         out: list[str] = []
 
         for k, v in UNKNOWN_RESCUE_NORMALIZE_MAP.items():
-            if k and TextUtils.fold_key(k) in raw_fold:
+            if k and fold_key(k) in raw_fold:
                 out.append(v)
                 break
 
@@ -142,9 +145,9 @@ class ReceiptParser:
             candidates = [str(x) for x in (rule.get("candidates") or [])]
 
             ok = False
-            if match_any and any(TextUtils.fold_key(x) in raw_fold for x in match_any if x):
+            if match_any and any(fold_key(x) in raw_fold for x in match_any if x):
                 ok = True
-            if match_all and all(TextUtils.fold_key(x) in raw_fold for x in match_all if x):
+            if match_all and all(fold_key(x) in raw_fold for x in match_all if x):
                 ok = True
             if match_patterns and any(re.search(p, raw_norm, flags=re.IGNORECASE) for p in match_patterns if p):
                 ok = True
@@ -161,7 +164,7 @@ class ReceiptParser:
         for x in out:
             if not x:
                 continue
-            k = TextUtils.fold_key(x)
+            k = fold_key(x)
             if k in seen:
                 continue
             seen.add(k)
@@ -170,7 +173,7 @@ class ReceiptParser:
 
     @staticmethod
     def _iter_class_name_hits(class_maps: dict[str, dict[str, str]], q: str, limit: int = 80) -> list[dict[str, str]]:
-        qq = TextUtils.simplify_key(q)
+        qq = simplify_key(q)
         if not qq:
             return []
 
@@ -178,21 +181,21 @@ class ReceiptParser:
         for obj_id in CLASS_SEARCH_ORDER:
             mp = class_maps.get(obj_id) or {}
             for name, code in mp.items():
-                if qq in TextUtils.simplify_key(name):
+                if qq in simplify_key(name):
                     hits.append({"class_id": obj_id, "name": name, "code": code})
                     if len(hits) >= limit:
                         return hits
         return hits
 
     @staticmethod
-    def _pick_best_hit(hits: list[dict[str, str]]) -> Optional[dict[str, str]]:
+    def _pick_best_hit(hits: list[dict[str, str]]) -> dict[str, str] | None:
         if not hits:
             return None
 
         def score(h: dict[str, str]) -> tuple[int, int, int, int, str]:
             name = h.get("name") or ""
             class_id = h.get("class_id") or ""
-            simple_len = len(TextUtils.simplify_key(name)) or 10**9
+            simple_len = len(simplify_key(name)) or 10**9
             has_digits = 1 if re.search(r"\d", name) else 0
             class_pri = CLASS_SEARCH_ORDER.index(class_id) if class_id in CLASS_SEARCH_ORDER else 999
             return (simple_len, has_digits, class_pri, len(name), name)
@@ -234,11 +237,11 @@ class ReceiptParser:
         )
     
     @staticmethod
-    def classify_to_code(class_maps: dict[str, dict[str, str]], canonical: str) -> Optional[tuple[str, str]]:
+    def classify_to_code(class_maps: dict[str, dict[str, str]], canonical: str) -> tuple[str, str] | None:
         hints = ESTAT_NAME_HINTS.get(canonical, [canonical])
-        canon_s = TextUtils.simplify_key(canonical)
+        canon_s = simplify_key(canonical)
 
-        for obj_id in ["cat01", "tab", "cat02", "cat03"]:
+        for obj_id in CLASS_SEARCH_ORDER:
             mp = class_maps.get(obj_id)
             if not mp:
                 continue
@@ -256,7 +259,7 @@ class ReceiptParser:
                     return obj_id, code
 
             for name, code in mp.items():
-                if canon_s and canon_s in TextUtils.simplify_key(name):
+                if canon_s and canon_s in simplify_key(name):
                     return obj_id, code
 
         return None
@@ -264,13 +267,13 @@ class ReceiptParser:
     @staticmethod
     def suggest_meta_candidates(class_maps: dict[str, dict[str, str]], canonical: str, limit: int = 10) -> list[dict[str, str]]:
         hints = ESTAT_NAME_HINTS.get(canonical, [canonical])
-        keys = [TextUtils.simplify_key(h) for h in hints if h]
+        keys = [simplify_key(h) for h in hints if h]
         hits: list[dict[str, str]] = []
 
         for obj_id in ["cat01", "tab", "cat02", "cat03"]:
             mp = class_maps.get(obj_id) or {}
             for name, code in mp.items():
-                nn = TextUtils.simplify_key(name)
+                nn = simplify_key(name)
                 if any(k and k in nn for k in keys):
                     hits.append({"class": obj_id, "name": name, "code": code})
                     if len(hits) >= limit:
@@ -278,7 +281,7 @@ class ReceiptParser:
         return hits
     
     @staticmethod
-    def resolve_time_code(class_maps: dict[str, dict[str, str]], yyyymm: str) -> tuple[str, Optional[str]]:
+    def resolve_time_code(class_maps: dict[str, dict[str, str]], yyyymm: str) -> tuple[str, str | None]:
         time_map = class_maps.get("time") or {}
         if not time_map:
             return ("time", None)
@@ -292,18 +295,18 @@ class ReceiptParser:
 
         patterns = [
             rf"{y}\s*年\s*0?{m}\s*月",
-            rf"{y}\s*[\-/\]\s*0?{m}",
+            rf"{y}\s*[\-/]\s*0?{m}",
             rf"{y}\s*0?{m}",
         ]
         for name, code in time_map.items():
-            nn = TextUtils.normalize_text(name)
+            nn = normalize_text(name)
             if any(re.search(p, nn) for p in patterns):
                 return ("time", code)
 
         return ("time", None)
 
     @staticmethod
-    def resolve_area_code(class_maps: dict[str, dict[str, str]], requested: str) -> tuple[str, Optional[str]]:
+    def resolve_area_code(class_maps: dict[str, dict[str, str]], requested: str) -> tuple[str, str | None]:
         area_map = class_maps.get("area") or {}
         if not area_map:
             return ("area", None)
