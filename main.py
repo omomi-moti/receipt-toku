@@ -30,14 +30,6 @@ def health():
         "estat_app_id_set": bool(settings.APP_ID),
     }
 
-@app.get("/health")
-def health():
-    return {
-        "ok": True,
-        "vision_model": get_model_name(),
-        "estat_app_id_set": bool(settings.APP_ID),
-    }
-
 @app.get("/metaSearch")
 async def meta_search(q: str = Query(..., description="例: 食パン / 鶏卵 / 卵 など")):
     statsDataId = await estat_client.pick_stats_data_id()
