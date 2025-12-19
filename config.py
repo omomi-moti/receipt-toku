@@ -1,28 +1,60 @@
 import os
 import re
 from pathlib import Path
-from typing import Dict, List, Any
-from dotenv import load_dotenv
+from typing import Any
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# 環境変数の読み込み
-load_dotenv(dotenv_path=Path(__file__).parent / ".env")
+# =================================================================
+# アプリケーション設定（Pydantic BaseSettings を使用）
+# .env ファイルから自動的に環境変数を読み込み、型バリデーションを行います
+# =================================================================
 
-class Settings:
-    APP_ID: str = (os.getenv("ESTAT_APP_ID") or "").strip()
-    ESTAT_BASE_URL: str = "https://api.e-stat.go.jp/rest/3.0/app/json"
+class Settings(BaseSettings):
+    # --- e-Stat API 設定 ---
+    estat_app_id: str = ""
+    estat_base_url: str = "https://api.e-stat.go.jp/rest/3.0/app/json"
 
-    # --- For Gemini Vision API ---
-    GEMINI_API_BASE_URL: str = (os.getenv("GEMINI_API_BASE_URL") or "https://generativelanguage.googleapis.com/v1beta/models").strip()
-    GEMINI_API_KEY: str = (os.getenv("GEMINI_API_KEY") or "").strip()
-    GEMINI_MODEL: str = (os.getenv("GEMINI_MODEL") or "gemini-flash-latest").strip()
+    # --- Gemini Vision API 設定 ---
+    gemini_api_base_url: str = "https://generativelanguage.googleapis.com/v1beta/models"
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-flash-latest"
 
+    # Pydantic Settings の設定
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore"
+    )
+
+    # 既存のコードとの互換性のためのプロパティ
+    @property
+    def APP_ID(self) -> str:
+        return self.estat_app_id
+    
+    @property
+    def ESTAT_BASE_URL(self) -> str:
+        return self.estat_base_url
+    
+    @property
+    def GEMINI_API_BASE_URL(self) -> str:
+        return self.gemini_api_base_url
+    
+    @property
+    def GEMINI_API_KEY(self) -> str:
+        return self.gemini_api_key
+    
+    @property
+    def GEMINI_MODEL(self) -> str:
+        return self.gemini_model
+
+# インスタンスの作成
 settings = Settings()
 
-# =========================
+# =================================================================
 # ルール・辞書定義
-# =========================
+# =================================================================
 
-ITEM_RULES: List[Dict[str, Any]] = [
+ITEM_RULES: list[dict[str, Any]] = [
     {"canonical": "牛乳", "keywords": ["牛乳", "ミルク", "MILK"]},
     {"canonical": "食パン", "keywords": ["食パン", "食ﾊﾟﾝ"]},
     {"canonical": "鶏卵", "keywords": ["鶏卵", "卵", "たまご", "玉子", "EGG", "タマゴ"]},
@@ -53,19 +85,19 @@ ITEM_RULES: List[Dict[str, Any]] = [
     {"canonical": "トイレットペーパー", "keywords": ["トイレット", "ﾄｲﾚｯﾄ", "ペーパー", "TP"]},
 ]
 
-ESTAT_NAME_HINTS: Dict[str, List[str]] = {
+ESTAT_NAME_HINTS: dict[str, list[str]] = {
     "食パン": ["食パン"],
     "鶏卵": ["鶏卵", "卵"],
 }
 
-UNKNOWN_RESCUE_NORMALIZE_MAP: Dict[str, str] = {
+UNKNOWN_RESCUE_NORMALIZE_MAP: dict[str, str] = {
     "タマゴ": "鶏卵",
     "たまご": "鶏卵",
     "玉子": "鶏卵",
     "卵": "鶏卵",
 }
 
-UNKNOWN_RESCUE_CANDIDATE_RULES: List[Dict[str, Any]] = [
+UNKNOWN_RESCUE_CANDIDATE_RULES: list[dict[str, Any]] = [
     {
         "id": "canned_foods",
         "match_any": ["缶詰", "CAN"],
@@ -84,6 +116,10 @@ UNKNOWN_RESCUE_CANDIDATE_RULES: List[Dict[str, Any]] = [
     },
 ]
 
+# e-Stat APIで品目を探す際のカテゴリIDの優先順位
+# cat01: 品目分類（食パン、卵など）
+# cat02/cat03: 規格・詳細分類
+# tab: 表章項目（統計表の区分）
 CLASS_SEARCH_ORDER = ["cat01", "cat02", "cat03", "tab"]
 
 # 支払い系除外ワード
