@@ -191,7 +191,7 @@ class EStatClient:
         class_key: str,
         class_code: str,
     ) -> tuple[float | None, str | None, str | None]:
-        params: dict[str, Any] = {"statsDataId": statsDataId, "limit": 1}
+        params: dict[str, str | int] = {"statsDataId": statsDataId, "limit": 1}
         if cdTime:
             params["cdTime"] = cdTime
         if cdArea:
