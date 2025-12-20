@@ -148,10 +148,10 @@ def _candidate_terms_for_unknown(raw_name: str) -> list[str]:
             break
 
     for rule in UNKNOWN_RESCUE_CANDIDATE_RULES:
-        match_any = [str(x) for x in (rule.get("match_any") or [Any])]
-        match_all = [str(x) for x in (rule.get("match_all") or [Any])]
-        match_patterns = [str(x) for x in (rule.get("match_patterns") or [Any])]
-        candidates = [str(x) for x in (rule.get("candidates") or [Any])]
+        match_any = rule.get("match_any", [])
+        match_all = rule.get("match_all", [])
+        match_patterns = rule.get("match_patterns", [])
+        candidates = rule.get("candidates", [])
 
         ok = False
         if match_any and any(fold_key(x) in raw_fold for x in match_any if x):
