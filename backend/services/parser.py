@@ -2,7 +2,6 @@ import re
 import unicodedata
 from functools import lru_cache
 from datetime import datetime
-from typing import Any
 from config import (
     ITEM_RULES, UNKNOWN_RESCUE_NORMALIZE_MAP, UNKNOWN_RESCUE_CANDIDATE_RULES, CLASS_SEARCH_ORDER,
     EXCLUDE_WORDS, ESTAT_NAME_HINTS
@@ -51,9 +50,9 @@ def fold_key(s: str) -> str:
 def _compiled_item_rules() -> list[tuple[str, list[str], list[re.Pattern[str]]]]:
     compiled: list[tuple[str, list[str], list[re.Pattern[str]]]] = []
     for rule in ITEM_RULES:
-        canonical = str(rule.get("canonical") or "")
-        keywords = [fold_key(str(k)) for k in (rule.get("keywords") or [Any]) if k]
-        patterns = [re.compile(str(p), flags=re.IGNORECASE) for p in (rule.get("patterns") or [Any]) if p]
+        canonical = rule.get("canonical") or ""
+        keywords = [fold_key(str(k)) for k in (rule.get("keywords") or [str]) if k]
+        patterns = [re.compile(str(p), flags=re.IGNORECASE) for p in (rule.get("patterns") or [str]) if p]
         compiled.append((canonical, keywords, patterns))
     return compiled
 
