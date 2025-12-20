@@ -4,7 +4,6 @@ from typing import Any
 import httpx
 from fastapi import HTTPException
 from config import settings, CLASS_SEARCH_ORDER, ESTAT_NAME_HINTS
-from services.parser import ReceiptParser 
 
 # =================================================================
 # 統計表の重要度を判定するためのキーワードと重み付けの定義
@@ -23,6 +22,7 @@ def _calculate_stats_table_score(table_info: dict[str, Any]) -> int:
     """統計表のタイトルから、探し物（小売物価統計）である可能性をスコア化します。"""
     title = str(table_info.get("TITLE", ""))
     score = 0
+    # 定義した重み付けリスト（定数）を使用して計算
     for keyword, weight in ESTAT_TABLE_SCORE_WEIGHTS:
         if keyword in title:
             score += weight
@@ -161,7 +161,7 @@ class EStatClient:
         if not lst:
             raise HTTPException(status_code=502, detail="該当する統計表が見つかりませんでした。")
 
-        # 指摘への対応: ネストされたscore関数を削除し、独立した関数を使用して並び替え
+        # 独立させたスコア計算関数を使用して並び替え
         ranked = sorted(lst, key=_calculate_stats_table_score, reverse=True)[:25]
         must_like = ["鶏卵", "卵", "食パン", "牛乳"]
 

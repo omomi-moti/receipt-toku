@@ -7,7 +7,13 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from config import settings
 from schemas import AnalyzeResponse, ItemResult, EstatResult
-from services import EStatClient, get_model_name, extract_text_from_image, ReceiptParser, normalize_text, simplify_key, fold_key, judge
+from services import (
+    EStatClient, get_model_name, extract_text_from_image, 
+    normalize_text, simplify_key, fold_key, guess_canonical,
+    parse_receipt_text, yyyymm_from_date, resolve_time_code,
+    resolve_area_code, resolve_canonical, classify_to_code,
+    suggest_meta_candidates, judge, is_excluded_name, search_class_names
+)
 
 app = FastAPI(title="Receipt Deal Checker (e-Stat)", version="mvp-stable-5a-gemini")
 
@@ -35,9 +41,8 @@ async def meta_search(q: str = Query(..., description="例: 食パン / 鶏卵 /
     statsDataId = await estat_client.pick_stats_data_id()
     class_maps = await estat_client.get_class_maps(statsDataId)
 
-    hits: list[dict[str, str]] = []
     # Parserのロジックを借りて検索
-    hits = ReceiptParser._iter_class_name_hits(class_maps, q, limit=50)
+    hits = search_class_names(class_maps, q, limit=50)
     
     return {"statsDataId": statsDataId, "hits": hits}
 
@@ -58,8 +63,8 @@ async def analyze_receipt(
         if s and re.search(r"\d{2,6}", s):
             candidate_lines.append(s)
 
-    purchase_date, parsed_items = ReceiptParser.parse_receipt_text(text)
-    yyyymm = ReceiptParser.yyyymm_from_date(purchase_date)
+    purchase_date, parsed_items = parse_receipt_text(text)
+    yyyymm = yyyymm_from_date(purchase_date)
 
     if debug_ocr:
         debug_extra = {
@@ -76,8 +81,8 @@ async def analyze_receipt(
         statsDataId = await estat_client.pick_stats_data_id()
         class_maps = await estat_client.get_class_maps(statsDataId)
         
-        _, cdTime = ReceiptParser.resolve_time_code(class_maps, yyyymm)
-        _, cdArea = ReceiptParser.resolve_area_code(class_maps, area_code)
+        _, cdTime = resolve_time_code(class_maps, yyyymm)
+        _, cdArea = resolve_area_code(class_maps, area_code)
         
     except HTTPException as e:
         results = []
@@ -85,7 +90,7 @@ async def analyze_receipt(
             results.append(
                 ItemResult(
                     raw_name=raw_name,
-                    canonical=ReceiptParser.guess_canonical(raw_name),
+                    canonical=guess_canonical(raw_name),
                     paid_unit_price=price,
                     quantity=1,
                     estat=EstatResult(found=False, judgement="UNKNOWN", note=f"e-Stat unavailable: {e.detail}"),
@@ -110,23 +115,23 @@ async def analyze_receipt(
     total_diff = 0.0
 
     for raw_name, price in parsed_items[:30]:
-        if ReceiptParser._is_excluded_name(raw_name):
+        if is_excluded_name(raw_name):
             continue
 
-        resolution = ReceiptParser.resolve_canonical(raw_name, class_maps)
+        resolution = resolve_canonical(raw_name, class_maps)
         canonical = resolution.canonical
 
-        cls: tuple[str, Optional[str]] = None
+        cls: tuple[str, str | None] | None = None
         if resolution.class_id and resolution.class_code:
             cls = (resolution.class_id, resolution.class_code)
 
         if canonical and price is not None:
             if not cls:
-                cls = ReceiptParser.classify_to_code(class_maps, canonical)
+                cls = classify_to_code(class_maps, canonical)
 
             if not cls:
                 unknown += 1
-                sugg = ReceiptParser.suggest_meta_candidates(class_maps, canonical, limit=10)
+                sugg = suggest_meta_candidates(class_maps, canonical, limit=10)
                 note = "item not in meta (try /metaSearch)"
                 if sugg:
                     note += f" candidates={sugg[:3]} (showing 3)"
