@@ -1,5 +1,17 @@
 // Editable table for item fields on the edit page.
-import type { ItemResult } from "../lib/types";
+import type { ItemResult } from "@/lib/types";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 
 type Props = {
   items: ItemResult[];
@@ -32,58 +44,61 @@ export function EditItemForm({ items, onChange }: Props) {
   };
 
   return (
-    <div className="card" style={{ marginTop: 12 }}>
-      <div className="flex space-between" style={{ alignItems: "center" }}>
-        <h3 className="section-title">アイテム編集</h3>
-        <button className="btn btn-secondary" onClick={addRow}>
+    <Card className="mt-4">
+      <CardHeader className="flex flex-row items-center justify-between pb-4">
+        <CardTitle className="text-lg">アイテム編集</CardTitle>
+        <Button variant="outline" size="sm" onClick={addRow}>
+          <Plus className="h-4 w-4 mr-2" />
           行を追加
-        </button>
-      </div>
-      <div style={{ overflowX: "auto" }}>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>canonical / 品目名</th>
-              <th>支払い単価</th>
-              <th>数量</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item, idx) => (
-              <tr key={idx}>
-                <td>
-                  <input
-                    className="input"
-                    value={item.canonical ?? item.raw_name ?? ""}
-                    onChange={(e) => handleChange(idx, "canonical", e.target.value)}
-                    placeholder="例: 食パン"
-                  />
-                </td>
-                <td>
-                  <input
-                    className="input"
-                    type="number"
-                    value={item.paid_unit_price ?? ""}
-                    onChange={(e) => handleChange(idx, "paid_unit_price", e.target.value)}
-                    min={0}
-                    step="0.01"
-                  />
-                </td>
-                <td>
-                  <input
-                    className="input"
-                    type="number"
-                    value={item.quantity ?? 1}
-                    onChange={(e) => handleChange(idx, "quantity", e.target.value)}
-                    min={1}
-                    step="1"
-                  />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+        </Button>
+      </CardHeader>
+      <CardContent>
+        <div className="rounded-md border overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50">
+                <TableHead className="min-w-[200px]">canonical / 品目名</TableHead>
+                <TableHead className="min-w-[120px]">支払い単価</TableHead>
+                <TableHead className="min-w-[100px]">数量</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {items.map((item, idx) => (
+                <TableRow key={idx}>
+                  <TableCell>
+                    <Input
+                      value={item.canonical ?? item.raw_name ?? ""}
+                      onChange={(e) => handleChange(idx, "canonical", e.target.value)}
+                      placeholder="例: 食パン"
+                      className="bg-background"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      type="number"
+                      value={item.paid_unit_price ?? ""}
+                      onChange={(e) => handleChange(idx, "paid_unit_price", e.target.value)}
+                      min={0}
+                      step="0.01"
+                      className="bg-background"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      type="number"
+                      value={item.quantity ?? 1}
+                      onChange={(e) => handleChange(idx, "quantity", e.target.value)}
+                      min={1}
+                      step="1"
+                      className="bg-background"
+                    />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

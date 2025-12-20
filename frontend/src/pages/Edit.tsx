@@ -1,10 +1,23 @@
 // Manual correction page with metaSearch helper.
 import { useEffect, useMemo, useState } from "react";
-import { EditItemForm } from "../components/EditItemForm";
-import { Loading } from "../components/Loading";
-import { ErrorBox } from "../components/ErrorBox";
-import { metaSearch } from "../lib/api";
-import type { AnalyzeResponse, ItemResult, MetaHit } from "../lib/types";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { EditItemForm } from "@/components/EditItemForm";
+import { Loading } from "@/components/Loading";
+import { ErrorBox } from "@/components/ErrorBox";
+import { metaSearch } from "@/lib/api";
+import type { AnalyzeResponse, ItemResult, MetaHit } from "@/lib/types";
+import { ArrowLeft, Check, Search } from "lucide-react";
 
 type Props = {
   result: AnalyzeResponse | null;
@@ -60,76 +73,90 @@ export function EditPage({ result, onUpdate, onBack }: Props) {
   };
 
   return (
-    <div className="card">
-      <div className="flex space-between" style={{ alignItems: "center" }}>
-        <h2 className="section-title">データ修正</h2>
-        <div className="flex gap">
-          <button className="btn btn-secondary" onClick={onBack}>
+    <Card>
+      <CardHeader className="flex flex-row items-start justify-between">
+        <div>
+          <CardTitle>データ修正</CardTitle>
+          <CardDescription>
+            解析結果を手動で修正できます
+          </CardDescription>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={onBack}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
             結果へ戻る
-          </button>
-          <button className="btn btn-primary" onClick={save}>
+          </Button>
+          <Button onClick={save}>
+            <Check className="h-4 w-4 mr-2" />
             修正内容を反映
-          </button>
+          </Button>
         </div>
-      </div>
+      </CardHeader>
 
-      <div style={{ marginTop: 10 }}>
-        <label className="muted">購入日 (YYYY-MM-DD)</label>
-        <input className="input" value={purchaseDate} onChange={(e) => setPurchaseDate(e.target.value)} placeholder="2024-04-01" />
-      </div>
-
-      <EditItemForm items={items} onChange={setItems} />
-
-      <div className="card" style={{ marginTop: 12 }}>
-        <h3 className="section-title">metaSearch (候補サジェスト)</h3>
-        <p className="muted" style={{ marginTop: 0 }}>
-          canonical や品目名を入力して e-Stat メタを検索します。ヒットした名称をコピーして貼り付けてください。
-        </p>
-        <div className="flex gap" style={{ alignItems: "center" }}>
-          <input
-            className="input"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="例: 食パン / 鶏卵"
-            style={{ flex: 1 }}
+      <CardContent className="space-y-6">
+        <div className="space-y-2">
+          <Label htmlFor="purchase-date">購入日 (YYYY-MM-DD)</Label>
+          <Input
+            id="purchase-date"
+            value={purchaseDate}
+            onChange={(e) => setPurchaseDate(e.target.value)}
+            placeholder="2024-04-01"
+            className="max-w-xs"
           />
-          <button className="btn btn-secondary" onClick={runSearch} disabled={searching || !searchTerm}>
-            {searching ? "検索中..." : "候補を検索"}
-          </button>
         </div>
-        {searching && (
-          <div style={{ marginTop: 6 }}>
-            <Loading label="検索中..." />
-          </div>
-        )}
-        {searchError && (
-          <div style={{ marginTop: 8 }}>
-            <ErrorBox message="metaSearch エラー" detail={searchError} />
-          </div>
-        )}
-        {hits.length > 0 && (
-          <div style={{ marginTop: 10 }}>
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>class_id</th>
-                  <th>name</th>
-                  <th>code</th>
-                </tr>
-              </thead>
-              <tbody>
-                {hits.slice(0, META_HITS_LIMIT).map((h, idx) => (
-                  <tr key={`${h.code}-${idx}`}>
-                    <td>{h.class_id}</td>
-                    <td>{h.name}</td>
-                    <td>{h.code}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-    </div>
+
+        <EditItemForm items={items} onChange={setItems} />
+
+        {/* metaSearch Section */}
+        <Card className="border-dashed">
+          <CardHeader>
+            <CardTitle className="text-lg">metaSearch (候補サジェスト)</CardTitle>
+            <CardDescription>
+              canonical や品目名を入力して e-Stat メタを検索します。ヒットした名称をコピーして貼り付けてください。
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex gap-3">
+              <Input
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="例: 食パン / 鶏卵"
+                className="flex-1"
+              />
+              <Button variant="outline" onClick={runSearch} disabled={searching || !searchTerm}>
+                <Search className="h-4 w-4 mr-2" />
+                {searching ? "検索中..." : "候補を検索"}
+              </Button>
+            </div>
+
+            {searching && <Loading label="検索中..." />}
+            {searchError && <ErrorBox message="metaSearch エラー" detail={searchError} />}
+
+            {hits.length > 0 && (
+              <div className="rounded-md border overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50">
+                      <TableHead>class_id</TableHead>
+                      <TableHead>name</TableHead>
+                      <TableHead>code</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {hits.slice(0, META_HITS_LIMIT).map((h, idx) => (
+                      <TableRow key={`${h.code}-${idx}`}>
+                        <TableCell>{h.class_id}</TableCell>
+                        <TableCell className="font-medium">{h.name}</TableCell>
+                        <TableCell className="text-muted-foreground">{h.code}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </CardContent>
+    </Card>
   );
 }

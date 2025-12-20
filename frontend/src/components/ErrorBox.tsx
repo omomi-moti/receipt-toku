@@ -1,4 +1,8 @@
 // Reusable error display with optional actions.
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { AlertCircle, RefreshCw, PenLine } from "lucide-react";
+
 type Props = {
   message: string;
   detail?: string;
@@ -9,25 +13,26 @@ type Props = {
 
 export function ErrorBox({ message, detail, onRetry, onAlternate, alternateLabel }: Props) {
   return (
-    <div className="card" style={{ borderColor: "#fca5a5", background: "#fef2f2" }}>
-      <p style={{ margin: 0, fontWeight: 700, color: "#b91c1c" }}>{message}</p>
-      {detail && (
-        <p className="muted" style={{ marginTop: 6 }}>
-          {detail}
-        </p>
+    <Alert variant="destructive">
+      <AlertCircle className="h-4 w-4" />
+      <AlertTitle>{message}</AlertTitle>
+      {detail && <AlertDescription className="mt-2">{detail}</AlertDescription>}
+      {(onRetry || onAlternate) && (
+        <div className="flex gap-2 mt-4">
+          {onRetry && (
+            <Button variant="outline" size="sm" onClick={onRetry}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              再試行
+            </Button>
+          )}
+          {onAlternate && (
+            <Button size="sm" onClick={onAlternate}>
+              <PenLine className="h-4 w-4 mr-2" />
+              {alternateLabel || "手入力で進む"}
+            </Button>
+          )}
+        </div>
       )}
-      <div className="flex gap" style={{ marginTop: 10 }}>
-        {onRetry && (
-          <button className="btn btn-secondary" onClick={onRetry}>
-            再試行
-          </button>
-        )}
-        {onAlternate && (
-          <button className="btn btn-primary" onClick={onAlternate}>
-            {alternateLabel || "手入力で進む"}
-          </button>
-        )}
-      </div>
-    </div>
+    </Alert>
   );
 }

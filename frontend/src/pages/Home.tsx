@@ -1,11 +1,13 @@
 // Upload and health-check page for starting analysis.
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Dropzone } from "../components/Dropzone";
-import { Loading } from "../components/Loading";
-import { ErrorBox } from "../components/ErrorBox";
-import { healthCheck } from "../lib/api";
-import type { AnalyzeResponse } from "../lib/types";
+import { Button } from "@/components/ui/button";
+import { Dropzone } from "@/components/Dropzone";
+import { Loading } from "@/components/Loading";
+import { ErrorBox } from "@/components/ErrorBox";
+import { healthCheck } from "@/lib/api";
+import type { AnalyzeResponse } from "@/lib/types";
+import { Scan, Wifi, PenLine, History } from "lucide-react";
 
 type Props = {
   file: File | null;
@@ -54,48 +56,49 @@ export function Home({ file, onFileChange, onAnalyze, isAnalyzing, lastResult, c
   };
 
   return (
-    <div className="card">
-      <h2 className="section-title">レシート画像をアップロード</h2>
+    <div className="space-y-4">
       <Dropzone onFileSelected={(f) => onFileChange(f)} />
+
       {file && (
-        <p style={{ marginTop: 8 }}>
-          選択中: <strong>{file.name}</strong>
+        <p className="text-sm">
+          選択中: <span className="font-semibold">{file.name}</span>
         </p>
       )}
 
-      <div className="flex gap" style={{ marginTop: 12 }}>
-        <button className="btn btn-primary" onClick={handleAnalyze} disabled={!file || isAnalyzing}>
+      <div className="flex flex-wrap gap-3">
+        <Button onClick={handleAnalyze} disabled={!file || isAnalyzing}>
+          <Scan className="h-4 w-4 mr-2" />
           {isAnalyzing ? "解析中..." : "解析する"}
-        </button>
-        <button className="btn btn-secondary" onClick={doHealthCheck} disabled={checking}>
+        </Button>
+        <Button variant="outline" onClick={doHealthCheck} disabled={checking}>
+          <Wifi className="h-4 w-4 mr-2" />
           {checking ? "確認中..." : "接続テスト"}
-        </button>
-        <button className="btn btn-secondary" onClick={() => navigate("/edit")}>
+        </Button>
+        <Button variant="outline" onClick={() => navigate("/edit")}>
+          <PenLine className="h-4 w-4 mr-2" />
           手入力で進む
-        </button>
+        </Button>
         {lastResult && (
-          <button className="btn btn-secondary" onClick={() => navigate("/result")}>
+          <Button variant="secondary" onClick={() => navigate("/result")}>
+            <History className="h-4 w-4 mr-2" />
             前回の結果を見る
-          </button>
+          </Button>
         )}
       </div>
 
-      {isAnalyzing && (
-        <div style={{ marginTop: 10 }}>
-          <Loading label="解析中..." />
-        </div>
-      )}
+      {isAnalyzing && <Loading label="解析中..." />}
 
       {healthStatus && (
-        <p className="muted" style={{ marginTop: 10 }}>
-          {healthStatus}
-        </p>
+        <p className="text-sm text-muted-foreground">{healthStatus}</p>
       )}
 
       {error && (
-        <div style={{ marginTop: 12 }}>
-          <ErrorBox message="エラー" detail={error} onRetry={handleAnalyze} onAlternate={() => navigate("/edit")} />
-        </div>
+        <ErrorBox
+          message="エラー"
+          detail={error}
+          onRetry={handleAnalyze}
+          onAlternate={() => navigate("/edit")}
+        />
       )}
     </div>
   );

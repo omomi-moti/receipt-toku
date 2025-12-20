@@ -1,9 +1,17 @@
 // Simple loading indicator with optional label.
-export function Loading({ label = "読み込み中" }: { label?: string }) {
+import { Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+type Props = {
+  label?: string;
+  className?: string;
+};
+
+export function Loading({ label = "読み込み中", className }: Props) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-      <span className="app-loading-spinner" role="status" aria-label={label ?? "読み込み中"} />
-      <span>{label}</span>
+    <div className={cn("flex items-center gap-3", className)}>
+      <Loader2 className="h-5 w-5 animate-spin text-primary" />
+      <span className="text-muted-foreground">{label}</span>
     </div>
   );
 }
