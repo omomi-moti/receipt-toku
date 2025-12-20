@@ -3,8 +3,10 @@ import unicodedata
 from functools import lru_cache
 from datetime import datetime
 from typing import Any
-from config import ITEM_RULES, UNKNOWN_RESCUE_NORMALIZE_MAP, UNKNOWN_RESCUE_CANDIDATE_RULES, CLASS_SEARCH_ORDER, \
+from config import (
+    ITEM_RULES, UNKNOWN_RESCUE_NORMALIZE_MAP, UNKNOWN_RESCUE_CANDIDATE_RULES, CLASS_SEARCH_ORDER,
     EXCLUDE_WORDS, ESTAT_NAME_HINTS
+)
 from schemas import CanonicalResolution
 
 # =================================================================
