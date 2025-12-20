@@ -140,3 +140,22 @@ button {
   color: #64748b;
   font-size: 14px;
 }
+
+@keyframes app-loading-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.app-loading-spinner {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 3px solid #cbd5e1;
+  border-top-color: #2563eb;
+  animation: app-loading-spin 0.9s linear infinite;
+  display: inline-block;
+}

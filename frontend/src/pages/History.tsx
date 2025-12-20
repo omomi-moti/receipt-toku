@@ -1,7 +1,7 @@
 // Local history viewer for saved results.
 import { useEffect, useState } from "react";
 import { ItemTable } from "../components/ItemTable";
-import { loadHistory, StoredResult } from "../lib/storage";
+import { clearHistory, deleteHistoryItem, loadHistory, StoredResult } from "../lib/storage";
 
 export function HistoryPage() {
   const [history, setHistory] = useState<StoredResult[]>([]);
@@ -13,9 +13,31 @@ export function HistoryPage() {
     setSelected(h[0] || null);
   }, []);
 
+  const handleDelete = (at: number) => {
+    deleteHistoryItem(at);
+    const next = loadHistory();
+    setHistory(next);
+    if (selected?.at === at) {
+      setSelected(next[0] || null);
+    }
+  };
+
+  const handleClear = () => {
+    clearHistory();
+    setHistory([]);
+    setSelected(null);
+  };
+
   return (
     <div className="card">
-      <h2 className="section-title">ローカル履歴</h2>
+      <div className="flex space-between" style={{ alignItems: "center" }}>
+        <h2 className="section-title">ローカル履歴</h2>
+        {history.length > 0 && (
+          <button className="btn btn-secondary" onClick={handleClear}>
+            全削除
+          </button>
+        )}
+      </div>
       {history.length === 0 && <p>履歴がありません。UNKNOWN などを保存するとここに表示されます。</p>}
       {history.length > 0 && (
         <div className="flex gap" style={{ alignItems: "flex-start" }}>
@@ -34,7 +56,19 @@ export function HistoryPage() {
                   }}
                   onClick={() => setSelected(h)}
                 >
-                  <p style={{ margin: "0 0 4px", fontWeight: 700 }}>購入日: {h.payload.purchase_date || "-"}</p>
+                  <div className="flex space-between" style={{ alignItems: "center", marginBottom: 4 }}>
+                    <p style={{ margin: 0, fontWeight: 700 }}>購入日: {h.payload.purchase_date || "-"}</p>
+                    <button
+                      className="btn btn-secondary"
+                      style={{ padding: "4px 8px", fontSize: 12 }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(h.at);
+                      }}
+                    >
+                      削除
+                    </button>
+                  </div>
                   <p className="muted" style={{ margin: 0 }}>
                     {new Date(h.at).toLocaleString()} / items: {h.payload.items?.length || 0}
                   </p>

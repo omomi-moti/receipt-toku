@@ -7,7 +7,7 @@ type Props = {
 };
 
 export function EditItemForm({ items, onChange }: Props) {
-  const handleChange = (idx: number, field: keyof ItemResult | "quantity" | "paid_unit_price", value: string) => {
+  const handleChange = (idx: number, field: keyof ItemResult, value: string) => {
     const next = items.map((it, i) =>
       i === idx
         ? {

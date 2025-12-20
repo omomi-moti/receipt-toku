@@ -1,6 +1,5 @@
 // Manual correction page with metaSearch helper.
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { EditItemForm } from "../components/EditItemForm";
 import { Loading } from "../components/Loading";
 import { ErrorBox } from "../components/ErrorBox";
@@ -14,9 +13,9 @@ type Props = {
 };
 
 const emptyItem: ItemResult = { raw_name: "", canonical: "", paid_unit_price: null, quantity: 1, estat: { judgement: "UNKNOWN" } };
+const META_HITS_LIMIT = 10;
 
 export function EditPage({ result, onUpdate, onBack }: Props) {
-  const navigate = useNavigate();
   const initialItems = useMemo(() => (result?.items && result.items.length > 0 ? result.items : [emptyItem]), [result]);
   const [items, setItems] = useState<ItemResult[]>(initialItems);
   const [purchaseDate, setPurchaseDate] = useState(result?.purchase_date || "");
@@ -43,7 +42,6 @@ export function EditPage({ result, onUpdate, onBack }: Props) {
       summary
     };
     onUpdate(next);
-    navigate("/result");
   };
 
   const runSearch = async () => {
@@ -120,7 +118,7 @@ export function EditPage({ result, onUpdate, onBack }: Props) {
                 </tr>
               </thead>
               <tbody>
-                {hits.slice(0, 10).map((h, idx) => (
+                {hits.slice(0, META_HITS_LIMIT).map((h, idx) => (
                   <tr key={`${h.code}-${idx}`}>
                     <td>{h.class_id}</td>
                     <td>{h.name}</td>

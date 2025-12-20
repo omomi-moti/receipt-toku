@@ -19,12 +19,14 @@ npm run dev
 
 ## 環境変数
 - `VITE_API_BASE_URL` : バックエンドのベースURL。フロントと同一オリジンなら `/` のままでOK。例: `http://localhost:8000`
+  - 開発時に `vite.config.ts` の `/api` プロキシを使う場合は未設定（空）でもOK
 
 ## 開発サーバー
 - 起動: `npm run dev`
 - ビルド: `npm run build`
 - 型チェックのみ: `npm run lint`
-- 必要なら `vite.config.ts` の `server.proxy` コメントアウトを外し、バックエンドへのプロキシを有効化してください。
+- `vite.config.ts` の `server.proxy` で `/api` をバックエンドへプロキシしています。
+  - `VITE_API_BASE_URL` 未設定時は `/api` がデフォルトになります。
 
 ## 画面フロー
 1. **トップ/アップロード** (`/`)  

@@ -1,5 +1,5 @@
 // Drag-and-drop file picker for receipt images.
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState, type KeyboardEvent } from "react";
 
 type Props = {
   onFileSelected: (file: File) => void;
@@ -9,6 +9,15 @@ export function Dropzone({ onFileSelected }: Props) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "Enter" || e.key === " ") {
+      if (e.key === " ") {
+        e.preventDefault();
+      }
+      inputRef.current?.click();
+    }
+  };
 
   const handleFiles = useCallback(
     (files: FileList | null) => {
@@ -44,7 +53,10 @@ export function Dropzone({ onFileSelected }: Props) {
         background: dragOver ? "#e0f2fe" : "#f8fafc",
         cursor: "pointer"
       }}
+      role="button"
+      tabIndex={0}
       onClick={() => inputRef.current?.click()}
+      onKeyDown={handleKeyDown}
     >
       <p style={{ margin: 0, fontWeight: 600 }}>レシート画像をドラッグ＆ドロップ</p>
       <p className="muted" style={{ marginTop: 6 }}>
