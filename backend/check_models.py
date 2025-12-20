@@ -1,4 +1,3 @@
-from google import genai
 from config import settings
 
 # =================================================================
@@ -16,11 +15,10 @@ else:
 
     try:
         # 最新の Client インスタンス化
-        client = genai.Client(api_key=api_key)
 
         found_any = False
         # 最新のモデル一覧取得方法
-        for m in client.models.list():
+        for m in api_key.models.list():
             print(f"- {m.name} (入力: {m.input_token_limit} tokens)")
             found_any = True
 
