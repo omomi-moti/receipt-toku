@@ -48,4 +48,5 @@ class CanonicalResolution(BaseModel):
     canonical: Optional[str] = Field(None, description="解決された標準名称")
     class_id: Optional[str] = Field(None, description="e-StatのカテゴリID")
     class_code: Optional[str] = Field(None, description="e-Statの項目コード")
-    candidates_debug: list[dict[str, Any]] = Field(default_factory=list[Any], description="名寄せの際に検討された候補（デバッグ用）")
+    candidates_debug: list[dict[str, str | int]] = \
+        Field(default_factory=list[str, str | int], description="名寄せの際に検討された候補（デバッグ用）")
