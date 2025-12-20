@@ -1,5 +1,5 @@
 from .estat import EStatClient
-from .vision import get_model_name, extract_text_from_image
+from .vision import get_model_name, extract_text_from_image, analyze_receipt_with_market_data
 from .parser import (
     normalize_text, simplify_key, fold_key, guess_canonical,
     parse_receipt_text, yyyymm_from_date, resolve_time_code,
