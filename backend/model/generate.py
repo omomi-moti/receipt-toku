@@ -17,7 +17,7 @@ from .prompt import SYSTEM_INSTRUCTION
 
 async def analyze_receipt_with_market_data(
         file_bytes: bytes,
-        market_data: list[dict[str, str | int]]
+        market_data: list[dict[str, str | int | float]]
 ) -> dict[str, Any]:
     """最新の google-genai SDK を使用して詳細なAI分析を実行します。"""
     if not settings.GEMINI_API_KEY:

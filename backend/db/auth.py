@@ -1,11 +1,10 @@
 from typing import Annotated
 
+from config import settings
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt  # type: ignore
 from loguru import logger
-
-from config import settings
 
 security = HTTPBearer()
 
@@ -17,7 +16,7 @@ def get_current_user(
     Supabase JWTトークンを検証し、ユーザー情報を返す。
     """
     token = credentials.credentials
-    jwt_secret = settings.supabase_jwt_secret
+    jwt_secret = settings.SUPABASE_JWT_SECRET
 
     if not jwt_secret:
         logger.error("SUPABASE_JWT_SECRET is not set")
