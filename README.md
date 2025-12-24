@@ -7,7 +7,7 @@
 > チームでの成果物をベースに、主に自身が担当したバックエンド実装・設計内容が含まれています。
 
 - チームリポジトリ（原本）:  
->   https://github.com/＜organization or user＞/＜team-repo-name＞
+>  [ https://github.com/](https://github.com/CHU1PC/receipt-toku)＜omomi-moti＞/＜素手で熊＞
 ---
 
 # Receipt Deal Checker (Receipt AI Analyzer)
