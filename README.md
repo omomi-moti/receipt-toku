@@ -1,3 +1,4 @@
+このリポジトリはチームリポジトリからfetchしたものです
 # Receipt Deal Checker (Receipt AI Analyzer)
 
 レシート画像をAIで解析し、市場価格（e-Stat）と比較してお得度を判定するアプリケーションです。
